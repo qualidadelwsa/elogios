@@ -1,0 +1,303 @@
+Carregue o conteúdo abaixo sem nenhum alteração.
+
+
+
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerador de Elogios (Slack)</title>
+    <!-- Tailwind CSS para um design moderno e responsivo -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Estilo para o indicador de carregamento (spinner) */
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #4f46e5;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans antialiased text-gray-900">
+
+    <div class="container mx-auto p-4 sm:p-8 max-w-4xl">
+        
+        <header class="mb-10">
+            <h1 class="text-3xl font-extrabold text-indigo-700">Gerador de Elogios (Slack)</h1>
+            <p class="text-gray-500 mt-2">Personalize reconhecimentos com IA e envie-os diretamente para o Slack.</p>
+        </header>
+
+        <!-- Painel de Configuração -->
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 mb-8 space-y-6">
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Seleção de Empresa -->
+                <div>
+                    <label for="empresa" class="block text-sm font-semibold text-gray-700 mb-2">Empresa</label>
+                    <select id="empresa" name="empresa" class="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all">
+                        <option value="Locaweb">Locaweb</option>
+                        <option value="KingHost">KingHost</option>
+                        <option value="Octadesk">Octadesk</option>
+                    </select>
+                </div>
+                <!-- Identificador do Analista -->
+                <div>
+                    <label for="analista" class="block text-sm font-semibold text-gray-700 mb-2">Utilizador do Analista (sem @)</label>
+                    <input type="text" id="analista" name="analista" placeholder="ex: joao.silva" class="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all">
+                </div>
+            </div>
+
+            <!-- URL da Imagem -->
+            <div>
+                <label for="imageUrl" class="block text-sm font-semibold text-gray-700 mb-2">Link da Imagem (Google Drive)</label>
+                <input type="text" id="imageUrl" name="imageUrl" placeholder="Cole o link de partilha do Drive aqui..." class="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition-all">
+            </div>
+
+            <!-- Conteúdo do Elogio -->
+            <div>
+                <label for="elogio" class="block text-sm font-semibold text-gray-700 mb-2">O que o cliente disse?</label>
+                <textarea id="elogio" name="elogio" rows="4" placeholder="Cole o feedback do cliente para que a IA possa extrair o melhor..." class="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition-all"></textarea>
+            </div>
+
+            <!-- Botão de Ação -->
+            <div>
+                <button id="gerarBtn" class="w-full flex items-center justify-center px-6 py-3 bg-indigo-600 text-white font-bold rounded-lg shadow-lg hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-300 transition duration-150 disabled:opacity-50">
+                    <div id="spinner" class="spinner mr-3 hidden"></div>
+                    <span id="btnText">Gerar Post e Abrir no Slack</span>
+                </button>
+            </div>
+
+        </div>
+
+        <!-- Resultados -->
+        <div id="resultado" class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hidden">
+            <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                <h2 class="text-xl font-bold text-gray-800">Post Estruturado (JSON)</h2>
+                <div class="flex gap-3">
+                    <button id="abrirSlackBtn" class="px-5 py-2 bg-indigo-50 text-indigo-700 font-semibold rounded-lg hover:bg-indigo-100 transition-colors border border-indigo-200">
+                        Abrir no Slack
+                    </button>
+                    <button id="copyBtn" class="px-5 py-2 bg-gray-100 text-gray-700 font-semibold rounded-lg hover:bg-gray-200 transition-colors border border-gray-300">
+                        <span id="copyText">Copiar JSON</span>
+                    </button>
+                </div>
+            </div>
+            <pre id="jsonOutput" class="bg-gray-900 text-indigo-300 p-5 rounded-lg overflow-x-auto text-sm border border-gray-800 leading-relaxed"></pre>
+        </div>
+
+        <!-- Alertas de Erro -->
+        <div id="errorMessage" class="bg-red-50 border-l-4 border-red-500 text-red-800 px-6 py-4 rounded-lg mt-6 hidden shadow-sm" role="alert">
+            <div class="flex items-center">
+                <svg class="h-5 w-5 text-red-500 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                </svg>
+                <span id="errorText" class="font-medium"></span>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        /** * Mock do ambiente Google Apps Script para funcionamento no Preview
+         */
+        const apiKey = "";
+        const google = {
+            script: {
+                run: {
+                    withSuccessHandler: function(handler) {
+                        this.success = handler;
+                        return this;
+                    },
+                    withFailureHandler: function(handler) {
+                        this.failure = handler;
+                        return this;
+                    },
+                    generatePraise: async function(data) {
+                        try {
+                            const systemPrompt = "Você é um especialista em cultura organizacional e qualidade. Sua tarefa é transformar feedbacks brutos de clientes em posts entusiasmados para o Slack. Você deve extrair os pontos positivos e gerar um JSON com três campos: 'introducao' (uma frase curta de impacto), 'corpoElogio' (um resumo do feedback focando no excelente atendimento do analista) e 'textoRodape' (uma frase motivacional curta sobre o impacto positivo do atendimento). Responda estritamente em JSON e em Português do Brasil.";
+                            const userQuery = `Empresa: ${data.empresa}\nAnalista: ${data.analista}\nFeedback do Cliente: ${data.elogio}`;
+
+                            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    contents: [{ parts: [{ text: userQuery }] }],
+                                    systemInstruction: { parts: [{ text: systemPrompt }] },
+                                    generationConfig: { responseMimeType: "application/json" }
+                                })
+                            });
+
+                            if (!response.ok) throw new Error("Erro na chamada da API.");
+                            const result = await response.json();
+                            const content = JSON.parse(result.candidates[0].content.parts[0].text);
+                            this.success(content);
+                        } catch (err) {
+                            this.failure(err);
+                        }
+                    }
+                }
+            }
+        };
+
+        // Configurações visuais por empresa
+        const configs = {
+            Locaweb: { title: ":locaweb: *Elogio em Locaweb!* :locaweb:", emoji: "❤️", sig: ":omelhordenós:" },
+            KingHost: { title: ":king: *Reconhecimento KingHost!* :king:", emoji: "💜", sig: ":omelhordenós:" },
+            Octadesk: { title: "🐙 *Reconhecimento Octadesk!* 🐙", emoji: "💙", sig: ":omelhordenós:" }
+        };
+
+        const elements = {
+            gerarBtn: document.getElementById('gerarBtn'),
+            btnText: document.getElementById('btnText'),
+            spinner: document.getElementById('spinner'),
+            resultado: document.getElementById('resultado'),
+            jsonOutput: document.getElementById('jsonOutput'),
+            errorMsg: document.getElementById('errorMessage'),
+            errorText: document.getElementById('errorText'),
+            abrirSlack: document.getElementById('abrirSlackBtn'),
+            copyBtn: document.getElementById('copyBtn'),
+            copyText: document.getElementById('copyText')
+        };
+
+        let lastGeneratedJson = null;
+
+        /**
+         * Transforma links do Google Drive para visualização direta de imagem
+         */
+        function formatDriveUrl(url) {
+            if (!url) return "https://via.placeholder.com/800x400?text=Sem+Imagem+de+Fundo";
+            const regex = /drive\.google\.com\/(?:file\/d\/|uc\?id=)([a-zA-Z0-9_-]+)/;
+            const match = url.match(regex);
+            return match ? `https://drive.google.com/uc?export=view&id=${match[1]}` : url;
+        }
+
+        /**
+         * Invoca o Block Kit Builder do Slack numa nova janela
+         */
+        function launchSlackBuilder(json) {
+            const data = encodeURIComponent(JSON.stringify(json));
+            const url = `https://app.slack.com/block-kit-builder/#${data}`;
+            window.open(url, '_blank');
+        }
+
+        /**
+         * Processamento após sucesso da IA no backend (Code.gs)
+         */
+        function handleSuccess(iaResult) {
+            elements.spinner.classList.add('hidden');
+            elements.gerarBtn.disabled = false;
+            elements.btnText.textContent = "Gerar Post e Abrir no Slack";
+
+            const empresa = document.getElementById('empresa').value;
+            const analista = document.getElementById('analista').value.replace('@', '');
+            const rawImg = document.getElementById('imageUrl').value;
+            const config = configs[empresa];
+
+            // Monta o corpo da mensagem com quebras de linha corretas
+            const slackText = [
+                config.title,
+                iaResult.introducao,
+                `Parabéns, @${analista}! ${config.emoji} ${iaResult.corpoElogio}`,
+                `O @time-qualidade agradece e celebra a tua dedicação! ${config.sig}`
+            ].join('\n\n');
+
+            const finalJson = {
+                blocks: [
+                    {
+                        type: "image",
+                        image_url: formatDriveUrl(rawImg),
+                        alt_text: "Post de Reconhecimento"
+                    },
+                    {
+                        type: "section",
+                        text: {
+                            type: "mrkdwn",
+                            text: slackText
+                        }
+                    },
+                    { type: "divider" },
+                    {
+                        type: "context",
+                        elements: [
+                            {
+                                type: "mrkdwn",
+                                text: `⭐ ${iaResult.textoRodape}\n\n@here`
+                            }
+                        ]
+                    }
+                ]
+            };
+
+            lastGeneratedJson = finalJson;
+            elements.jsonOutput.textContent = JSON.stringify(finalJson, null, 2);
+            elements.resultado.classList.remove('hidden');
+            
+            // Tenta abrir o Slack automaticamente
+            launchSlackBuilder(finalJson);
+        }
+
+        /**
+         * Processamento em caso de falha na chamada ao Code.gs
+         */
+        function handleFailure(err) {
+            elements.spinner.classList.add('hidden');
+            elements.gerarBtn.disabled = false;
+            elements.btnText.textContent = "Tentar Novamente";
+            elements.errorText.textContent = err.message || "Ocorreu um erro ao processar o elogio.";
+            elements.errorMsg.classList.remove('hidden');
+        }
+
+        // Clique no botão principal para invocar o Backend
+        elements.gerarBtn.addEventListener('click', () => {
+            const data = {
+                empresa: document.getElementById('empresa').value,
+                analista: document.getElementById('analista').value,
+                elogio: document.getElementById('elogio').value
+            };
+
+            if (!data.analista || !data.elogio) {
+                elements.errorText.textContent = "Por favor, preencha o utilizador do analista e o texto do elogio.";
+                elements.errorMsg.classList.remove('hidden');
+                return;
+            }
+
+            elements.spinner.classList.remove('hidden');
+            elements.gerarBtn.disabled = true;
+            elements.btnText.textContent = "Processando com IA...";
+            elements.errorMsg.classList.add('hidden');
+
+            // Comunicação direta com o ficheiro Code.gs (simulada aqui via Gemini API)
+            google.script.run
+                .withSuccessHandler(handleSuccess)
+                .withFailureHandler(handleFailure)
+                .generatePraise(data);
+        });
+
+        // Botão para reabrir no Slack manualmente
+        elements.abrirSlack.addEventListener('click', () => {
+            if (lastGeneratedJson) launchSlackBuilder(lastGeneratedJson);
+        });
+
+        // Funcionalidade de copiar JSON para a área de transferência
+        elements.copyBtn.addEventListener('click', () => {
+            const content = elements.jsonOutput.textContent;
+            const el = document.createElement('textarea');
+            el.value = content;
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+            
+            elements.copyText.textContent = "JSON Copiado!";
+            setTimeout(() => elements.copyText.textContent = "Copiar JSON", 2500);
+        });
+    </script>
+</body>
+</html></html>
